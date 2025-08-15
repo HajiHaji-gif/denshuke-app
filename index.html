@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電助 - 空き時間管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .page {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #dee2e6;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: #5a67d8;
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-field {
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* フィルターモーダル */
+        .filter-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .filter-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .person-filter-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
+        .person-filter-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .person-filter-item input {
+            margin-right: 10px;
+        }
+
+        /* ホーム画面のスケジュール表示 */
+        .daily-schedule {
+            margin-bottom: 30px;
+        }
+
+        .selected-date {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .schedule-table {
+            display: grid;
+            gap: 1px;
+            background: #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .schedule-header {
+            display: contents;
+        }
+
+        .time-label {
+            background: #f8f9fa;
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            border-right: 2px solid #dee2e6;
+        }
+
+        .person-header {
+            background: #667eea;
+            color: white;
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .schedule-cell {
+            background: white;
+            min-height: 30px;
+            border: 1px solid #dee2e6;
+        }
+
+        .schedule-cell.filled {
+            opacity: 0.8;
+        }
+
+        /* 入力画面のカレンダー */
+        .month-selector {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .month-selector select {
+            padding: 8px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .input-calendar {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .calendar-grid {
+            display: grid;
+            gap: 1px;
+            background: #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+            min-width: 800px;
+        }
+
+        .calendar-header {
+            display: contents;
+        }
+
+        .day-header {
+            background: #667eea;
+            color: white;
+            padding: 8px 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .time-cell {
+            background: white;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .time-cell:hover {
+            transform: scale(1.1);
+            border-color: #667eea;
+            z-index: 1;
+        }
+
+        .time-cell.filled {
+            opacity: 0.9;
+        }
+
+        /* 色パレット */
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+
+        .color-option.selected {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+
+        /* 補足文表示 */
+        .supplements-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #dee2e6;
+        }
+
+        .supplements-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .supplement-item {
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin-bottom: 10px;
+        }
+
+        .supplement-item strong {
+            color: #856404;
+        }
+
+        /* 補足入力画面 */
+        .textarea-field {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .textarea-field:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* ボタン配置 */
+        .bottom-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        /* 編集画面のスタイル */
+        .edit-section {
+            margin-bottom: 30px;
+        }
+
+        .person-list {
+            display: grid;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .person-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .person-item:hover {
+            border-color: #667eea;
+            background: #e8f0fe;
+        }
+
+        .person-name-display {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .edit-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #218838;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .edit-mode {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border-radius: 10px;
+            border: 2px solid #ffc107;
+        }
+
+        .edit-mode.active {
+            display: block;
+        }
+
+        .edit-mode h3 {
+            color: #856404;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .calendar-grid {
+                min-width: 600px;
+            }
+
+            .time-cell {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">電助</h1>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn btn-primary" onclick="showPage('home')">ホーム</button>
+            <button class="btn btn-secondary" onclick="showPage('input')">空き時間入力</button>
+            <button class="btn btn-secondary" onclick="showPage('supplement')">補足入力</button>
+            <button class="btn btn-secondary" onclick="showPage('edit')">入力済の内容編集</button>
+        </div>
+
+        <!-- ホーム画面 -->
+        <div id="home" class="page active">
+            <div class="filter-section">
+                <button class="filter-btn" onclick="showFilterModal()">フィルター</button>
+                <div class="date-selector">
+                    <label>表示日:</label>
+                    <input type="date" class="input-field" id="viewDate" onchange="updateHomeDisplay()">
+                </div>
+            </div>
+
+            <div class="daily-schedule">
+                <div class="selected-date" id="selectedDateDisplay"></div>
+                <div id="scheduleTableContainer">
+                    <!-- スケジュール表がここに表示されます -->
+                </div>
+            </div>
+
+            <div class="supplements-section">
+                <div class="supplements-title">補足文</div>
+                <div id="supplementsDisplay">
+                    <!-- 補足文がここに表示されます -->
+                </div>
+            </div>
+
+            <div class="bottom-buttons">
+                <button class="btn btn-secondary" onclick="showPage('supplement')">補足を入力する</button>
+            </div>
+        </div>
+
+        <!-- 空き時間入力画面 -->
+        <div id="input" class="page">
+            <h2>空き時間入力</h2>
+            <input type="text" class="input-field" id="inputPersonName" placeholder="名前を入力してください" style="width: 300px; margin: 20px 0;">
+            
+            <div class="month-selector">
+                <label>表示月:</label>
+                <select id="inputYear"></select>
+                <select id="inputMonth"></select>
+                <button class="btn btn-secondary" onclick="updateInputCalendar()">表示更新</button>
+            </div>
+
+            <div>
+                <h4>色を選択:</h4>
+                <div class="color-palette">
+                    <div class="color-option selected" style="background-color: #667eea" data-color="#667eea"></div>
+                    <div class="color-option" style="background-color: #ff6b6b" data-color="#ff6b6b"></div>
+                    <div class="color-option" style="background-color: #4ecdc4" data-color="#4ecdc4"></div>
+                    <div class="color-option" style="background-color: #45b7d1" data-color="#45b7d1"></div>
+                    <div class="color-option" style="background-color: #96ceb4" data-color="#96ceb4"></div>
+                    <div class="color-option" style="background-color: #ffeaa7" data-color="#ffeaa7"></div>
+                    <div class="color-option" style="background-color: #dda0dd" data-color="#dda0dd"></div>
+                    <div class="color-option" style="background-color: #98d8c8" data-color="#98d8c8"></div>
+                    <div class="color-option" style="background-color: #f7dc6f" data-color="#f7dc6f"></div>
+                    <div class="color-option" style="background-color: #bb8fce" data-color="#bb8fce"></div>
+                    <div class="color-option" style="background-color: #85c1e9" data-color="#85c1e9"></div>
+                    <div class="color-option" style="background-color: #f8c471" data-color="#f8c471"></div>
+                </div>
+            </div>
+
+            <div class="input-calendar">
+                <div id="inputCalendarGrid">
+                    <!-- カレンダーがここに表示されます -->
+                </div>
+            </div>
+
+            <div class="bottom-buttons">
+                <button class="btn btn-primary" onclick="saveSchedule()">入力を完了する</button>
+            </div>
+        </div>
+
+        <!-- 入力済の内容編集画面 -->
+        <div id="edit" class="page">
+            <h2>入力済の内容編集</h2>
+            
+            <div class="edit-section">
+                <div class="month-selector">
+                    <label>編集する月:</label>
+                    <select id="editYear"></select>
+                    <select id="editMonth"></select>
+                    <button class="btn btn-secondary" onclick="loadEditList()">表示</button>
+                </div>
+            </div>
+
+            <div id="editPersonList" class="person-list">
+                <!-- 入力済みの人のリストがここに表示されます -->
+            </div>
+
+            <div id="editMode" class="edit-mode">
+                <h3 id="editModeTitle">編集モード</h3>
+                
+                <div>
+                    <h4>色を選択:</h4>
+                    <div class="color-palette" id="editColorPalette">
+                        <div class="color-option" style="background-color: #667eea" data-color="#667eea"></div>
+                        <div class="color-option" style="background-color: #ff6b6b" data-color="#ff6b6b"></div>
+                        <div class="color-option" style="background-color: #4ecdc4" data-color="#4ecdc4"></div>
+                        <div class="color-option" style="background-color: #45b7d1" data-color="#45b7d1"></div>
+                        <div class="color-option" style="background-color: #96ceb4" data-color="#96ceb4"></div>
+                        <div class="color-option" style="background-color: #ffeaa7" data-color="#ffeaa7"></div>
+                        <div class="color-option" style="background-color: #dda0dd" data-color="#dda0dd"></div>
+                        <div class="color-option" style="background-color: #98d8c8" data-color="#98d8c8"></div>
+                        <div class="color-option" style="background-color: #f7dc6f" data-color="#f7dc6f"></div>
+                        <div class="color-option" style="background-color: #bb8fce" data-color="#bb8fce"></div>
+                        <div class="color-option" style="background-color: #85c1e9" data-color="#85c1e9"></div>
+                        <div class="color-option" style="background-color: #f8c471" data-color="#f8c471"></div>
+                    </div>
+                </div>
+
+                <div class="input-calendar">
+                    <div id="editCalendarGrid">
+                        <!-- 編集用カレンダーがここに表示されます -->
+                    </div>
+                </div>
+
+                <div class="bottom-buttons">
+                    <button class="btn btn-primary" onclick="saveEditedSchedule()">変更を保存</button>
+                    <button class="btn btn-secondary" onclick="cancelEdit()">編集をキャンセル</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 補足入力画面 -->
+        <div id="supplement" class="page">
+            <h2>補足文入力</h2>
+            <input type="text" class="input-field" id="supplementPersonName" placeholder="名前を入力してください" style="width: 300px; margin: 20px 0;">
+            
+            <div class="month-selector">
+                <label>対象月:</label>
+                <select id="supplementYear"></select>
+                <select id="supplementMonth"></select>
+            </div>
+
+            <textarea class="textarea-field" id="supplementText" placeholder="補足文を入力してください"></textarea>
+
+            <div class="bottom-buttons">
+                <button class="btn btn-primary" onclick="saveSupplement()">入力を完了する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- フィルターモーダル -->
+    <div id="filterModal" class="filter-modal">
+        <div class="filter-modal-content">
+            <h3>表示する人を選択</h3>
+            <div class="person-filter-list" id="personFilterList">
+                <!-- 人物リストがここに表示されます -->
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="applyFilter()">適用</button>
+                <button class="btn btn-secondary" onclick="closeFilterModal()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let scheduleData = {};
+        let supplementData = {};
+        let selectedColor = '#667eea';
+        let editSelectedColor = '#667eea';
+        let isDrawing = false;
+        let currentInputYear = new Date().getFullYear();
+        let currentInputMonth = new Date().getMonth() + 1;
+        let selectedPeople = new Set();
+        let editingScheduleKey = null;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeYearMonthSelectors();
+            updateInputCalendar();
+            setupColorPalette();
+            setupEditColorPalette();
+            setupDrawingEvents();
+            
+            // 今日の日付を設定
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('viewDate').value = today;
+            updateHomeDisplay();
+        });
+
+        // ページ切り替え
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+            
+            if (pageId === 'home') {
+                updateHomeDisplay();
+            }
+        }
+
+        // 年月セレクターの初期化
+        function initializeYearMonthSelectors() {
+            const currentYear = new Date().getFullYear();
+            const yearSelectors = ['inputYear', 'supplementYear', 'editYear'];
+            const monthSelectors = ['inputMonth', 'supplementMonth', 'editMonth'];
+
+            yearSelectors.forEach(id => {
+                const select = document.getElementById(id);
+                for (let year = currentYear - 1; year <= currentYear + 2; year++) {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year + '年';
+                    if (year === currentYear) option.selected = true;
+                    select.appendChild(option);
+                }
+            });
+
+            monthSelectors.forEach(id => {
+                const select = document.getElementById(id);
+                for (let month = 1; month <= 12; month++) {
+                    const option = document.createElement('option');
+                    option.value = month;
+                    option.textContent = month + '月';
+                    if (month === new Date().getMonth() + 1) option.selected = true;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        // 色パレットのセットアップ
+        function setupColorPalette() {
+            document.querySelectorAll('#input .color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('#input .color-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedColor = this.dataset.color;
+                });
+            });
+        }
+
+        // 編集画面の色パレットのセットアップ
+        function setupEditColorPalette() {
+            document.querySelectorAll('#editColorPalette .color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('#editColorPalette .color-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    editSelectedColor = this.dataset.color;
+                });
+            });
+        }
+
+        // 描画イベントのセットアップ
+        function setupDrawingEvents() {
+            document.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('time-cell')) {
+                    isDrawing = true;
+                    toggleCell(e.target);
+                    e.preventDefault();
+                }
+            });
+
+            document.addEventListener('mouseup', function() {
+                isDrawing = false;
+            });
+
+            document.addEventListener('mouseover', function(e) {
+                if (isDrawing && e.target.classList.contains('time-cell')) {
+                    toggleCell(e.target);
+                }
+            });
+        }
+
+        // セルの切り替え
+        function toggleCell(cell) {
+            const isEditMode = cell.closest('#editCalendarGrid');
+            const currentColor = isEditMode ? editSelectedColor : selectedColor;
+            
+            if (cell.classList.contains('filled')) {
+                cell.classList.remove('filled');
+                cell.style.backgroundColor = '';
+            } else {
+                cell.classList.add('filled');
+                cell.style.backgroundColor = currentColor;
+            }
+        }
+
+        // 入力カレンダーの更新
+        function updateInputCalendar() {
+            currentInputYear = parseInt(document.getElementById('inputYear').value);
+            currentInputMonth = parseInt(document.getElementById('inputMonth').value);
+            
+            const calendar = document.getElementById('inputCalendarGrid');
+            calendar.innerHTML = '';
+            calendar.className = 'calendar-grid';
+            
+            const daysInMonth = new Date(currentInputYear, currentInputMonth, 0).getDate();
+            
+            // グリッドのカラム数を設定（時間列 + 日数）
+            calendar.style.gridTemplateColumns = `60px repeat(${daysInMonth}, 1fr)`;
+            
+            // ヘッダー作成
+            const emptyHeader = document.createElement('div');
+            emptyHeader.className = 'time-label';
+            calendar.appendChild(emptyHeader);
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.textContent = `${day}日`;
+                calendar.appendChild(dayHeader);
+            }
+            
+            // 時間とセルを作成
+            for (let hour = 0; hour < 24; hour++) {
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = String(hour).padStart(2, '0') + ':00';
+                calendar.appendChild(timeLabel);
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'time-cell';
+                    cell.dataset.day = day;
+                    cell.dataset.hour = hour;
+                    calendar.appendChild(cell);
+                }
+            }
+        }
+
+        // スケジュール保存
+        function saveSchedule() {
+            const name = document.getElementById('inputPersonName').value.trim();
+            if (!name) {
+                alert('名前を入力してください');
+                return;
+            }
+
+            const key = `${name}_${currentInputYear}_${currentInputMonth}`;
+            scheduleData[key] = {
+                name: name,
+                year: currentInputYear,
+                month: currentInputMonth,
+                data: {},
+                color: selectedColor
+            };
+
+            document.querySelectorAll('#inputCalendarGrid .time-cell.filled').forEach(cell => {
+                const day = parseInt(cell.dataset.day);
+                const hour = parseInt(cell.dataset.hour);
+                if (!scheduleData[key].data[day]) {
+                    scheduleData[key].data[day] = [];
+                }
+                scheduleData[key].data[day].push(hour);
+            });
+
+            // 入力フィールドとカレンダーをリセット
+            document.getElementById('inputPersonName').value = '';
+            document.querySelectorAll('#inputCalendarGrid .time-cell').forEach(cell => {
+                cell.classList.remove('filled');
+                cell.style.backgroundColor = '';
+            });
+
+            alert('スケジュールを保存しました');
+            showPage('home');
+        }
+
+        // 補足保存
+        function saveSupplement() {
+            const name = document.getElementById('supplementPersonName').value.trim();
+            const text = document.getElementById('supplementText').value.trim();
+            const year = parseInt(document.getElementById('supplementYear').value);
+            const month = parseInt(document.getElementById('supplementMonth').value);
+
+            if (!name || !text) {
+                alert('名前と補足文を入力してください');
+                return;
+            }
+
+            const key = `${name}_${year}_${month}`;
+            supplementData[key] = {
+                name: name,
+                year: year,
+                month: month,
+                text: text
+            };
+
+            // フィールドをリセット
+            document.getElementById('supplementPersonName').value = '';
+            document.getElementById('supplementText').value = '';
+
+            alert('補足を保存しました');
+            showPage('home');
+        }
+
+        // フィルターモーダルの表示
+        function showFilterModal() {
+            const modal = document.getElementById('filterModal');
+            const list = document.getElementById('personFilterList');
+            list.innerHTML = '';
+
+            // 全ての人物名を取得
+            const allPeople = new Set();
+            Object.values(scheduleData).forEach(schedule => {
+                allPeople.add(schedule.name);
+            });
+
+            // 初回は全員を選択状態にする
+            if (selectedPeople.size === 0) {
+                selectedPeople = new Set(allPeople);
+            }
+
+            allPeople.forEach(person => {
+                const item = document.createElement('div');
+                item.className = 'person-filter-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = selectedPeople.has(person);
+                checkbox.onchange = function() {
+                    if (this.checked) {
+                        selectedPeople.add(person);
+                    } else {
+                        selectedPeople.delete(person);
+                    }
+                };
+
+                const label = document.createElement('label');
+                label.textContent = person;
+
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                list.appendChild(item);
+            });
+
+            modal.style.display = 'block';
+        }
+
+        // フィルターモーダルを閉じる
+        function closeFilterModal() {
+            document.getElementById('filterModal').style.display = 'none';
+        }
+
+        // フィルターを適用
+        function applyFilter() {
+            closeFilterModal();
+            updateHomeDisplay();
+        }
+
+        // ホーム画面の表示更新
+        function updateHomeDisplay() {
+            const selectedDate = document.getElementById('viewDate').value;
+            if (!selectedDate) return;
+
+            const date = new Date(selectedDate);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+
+            // 選択された日付を表示
+            const dateDisplay = document.getElementById('selectedDateDisplay');
+            dateDisplay.textContent = `${year}年${month}月${day}日の空き時間`;
+
+            // 該当する月のスケジュールを取得
+            const relevantSchedules = Object.values(scheduleData).filter(schedule => {
+                return schedule.year === year && 
+                       schedule.month === month &&
+                       (selectedPeople.size === 0 || selectedPeople.has(schedule.name));
+            });
+
+            createScheduleTable(relevantSchedules, day);
+            updateSupplementsDisplay(year, month);
+        }
+
+        // スケジュール表の作成
+        function createScheduleTable(schedules, targetDay) {
+            const container = document.getElementById('scheduleTableContainer');
+            container.innerHTML = '';
+
+            if (schedules.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; margin: 50px 0;">表示するスケジュールがありません</p>';
+                return;
+            }
+
+            const table = document.createElement('div');
+            table.className = 'schedule-table';
+            
+            // グリッドのカラム数を設定（時間列 + 人数）
+            table.style.gridTemplateColumns = `80px repeat(${schedules.length}, 1fr)`;
+
+            // ヘッダー作成
+            const timeHeader = document.createElement('div');
+            timeHeader.className = 'time-label';
+            timeHeader.textContent = '時間';
+            table.appendChild(timeHeader);
+
+            schedules.forEach(schedule => {
+                const personHeader = document.createElement('div');
+                personHeader.className = 'person-header';
+                personHeader.textContent = schedule.name;
+                table.appendChild(personHeader);
+            });
+
+            // 各時間のセルを作成
+            for (let hour = 0; hour < 24; hour++) {
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = String(hour).padStart(2, '0') + ':00';
+                table.appendChild(timeLabel);
+
+                schedules.forEach(schedule => {
+                    const cell = document.createElement('div');
+                    cell.className = 'schedule-cell';
+                    
+                    // 該当する日・時間に予定があるかチェック
+                    if (schedule.data[targetDay] && schedule.data[targetDay].includes(hour)) {
+                        cell.classList.add('filled');
+                        cell.style.backgroundColor = schedule.color;
+                    }
+                    
+                    table.appendChild(cell);
+                });
+            }
+
+            container.appendChild(table);
+        }
+
+        // 補足文の表示更新
+        function updateSupplementsDisplay(year, month) {
+            const container = document.getElementById('supplementsDisplay');
+            container.innerHTML = '';
+
+            const relevantSupplements = Object.values(supplementData).filter(supplement => {
+                return supplement.year === year && 
+                       supplement.month === month &&
+                       (selectedPeople.size === 0 || selectedPeople.has(supplement.name));
+            });
+
+            if (relevantSupplements.length === 0) {
+                container.innerHTML = '<p style="color: #666;">この月の補足文はありません</p>';
+                return;
+            }
+
+            relevantSupplements.forEach(supplement => {
+                const item = document.createElement('div');
+                item.className = 'supplement-item';
+                item.innerHTML = `<strong>${supplement.name}:</strong> ${supplement.text}`;
+                container.appendChild(item);
+            });
+        }
+
+                    // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('filterModal');
+            if (event.target === modal) {
+                closeFilterModal();
+            }
+        }
+
+        // 編集リストの読み込み
+        function loadEditList() {
+            const year = parseInt(document.getElementById('editYear').value);
+            const month = parseInt(document.getElementById('editMonth').value);
+            const listContainer = document.getElementById('editPersonList');
+            
+            listContainer.innerHTML = '';
+
+            const relevantSchedules = Object.entries(scheduleData).filter(([key, schedule]) => {
+                return schedule.year === year && schedule.month === month;
+            });
+
+            if (relevantSchedules.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #666; margin: 50px 0;">この月に入力された内容はありません</p>';
+                return;
+            }
+
+            relevantSchedules.forEach(([key, schedule]) => {
+                const item = document.createElement('div');
+                item.className = 'person-item';
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'person-name-display';
+                nameDiv.textContent = schedule.name;
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'edit-buttons';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-small btn-edit';
+                editBtn.textContent = '編集';
+                editBtn.onclick = () => startEditMode(key, schedule);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-small btn-delete';
+                deleteBtn.textContent = '削除';
+                deleteBtn.onclick = () => deleteSchedule(key, schedule);
+
+                buttonsDiv.appendChild(editBtn);
+                buttonsDiv.appendChild(deleteBtn);
+
+                item.appendChild(nameDiv);
+                item.appendChild(buttonsDiv);
+                listContainer.appendChild(item);
+            });
+        }
+
+        // 編集モードの開始
+        function startEditMode(key, schedule) {
+            editingScheduleKey = key;
+            editSelectedColor = schedule.color;
+            
+            const editMode = document.getElementById('editMode');
+            const title = document.getElementById('editModeTitle');
+            title.textContent = `${schedule.name}さんの${schedule.year}年${schedule.month}月の予定を編集`;
+            
+            // 色パレットの選択状態を更新
+            document.querySelectorAll('#editColorPalette .color-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.color === schedule.color) {
+                    option.classList.add('selected');
+                }
+            });
+
+            // カレンダーを作成し、既存の内容を表示
+            createEditCalendar(schedule.year, schedule.month, schedule);
+            editMode.classList.add('active');
+        }
+
+        // 編集用カレンダーの作成
+        function createEditCalendar(year, month, schedule) {
+            const calendar = document.getElementById('editCalendarGrid');
+            calendar.innerHTML = '';
+            calendar.className = 'calendar-grid';
+            
+            const daysInMonth = new Date(year, month, 0).getDate();
+            
+            // グリッドのカラム数を設定（時間列 + 日数）
+            calendar.style.gridTemplateColumns = `60px repeat(${daysInMonth}, 1fr)`;
+            
+            // ヘッダー作成
+            const emptyHeader = document.createElement('div');
+            emptyHeader.className = 'time-label';
+            calendar.appendChild(emptyHeader);
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.textContent = `${day}日`;
+                calendar.appendChild(dayHeader);
+            }
+            
+            // 時間とセルを作成
+            for (let hour = 0; hour < 24; hour++) {
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = String(hour).padStart(2, '0') + ':00';
+                calendar.appendChild(timeLabel);
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'time-cell';
+                    cell.dataset.day = day;
+                    cell.dataset.hour = hour;
+                    
+                    // 既存の予定があれば表示
+                    if (schedule.data[day] && schedule.data[day].includes(hour)) {
+                        cell.classList.add('filled');
+                        cell.style.backgroundColor = schedule.color;
+                    }
+                    
+                    calendar.appendChild(cell);
+                }
+            }
+        }
+
+        // 編集された内容を保存
+        function saveEditedSchedule() {
+            if (!editingScheduleKey) return;
+
+            const schedule = scheduleData[editingScheduleKey];
+            schedule.color = editSelectedColor;
+            schedule.data = {};
+
+            // 編集されたカレンダーから予定を読み込み
+            document.querySelectorAll('#editCalendarGrid .time-cell.filled').forEach(cell => {
+                const day = parseInt(cell.dataset.day);
+                const hour = parseInt(cell.dataset.hour);
+                if (!schedule.data[day]) {
+                    schedule.data[day] = [];
+                }
+                schedule.data[day].push(hour);
+            });
+
+            alert('変更を保存しました');
+            cancelEdit();
+            loadEditList();
+        }
+
+        // 編集をキャンセル
+        function cancelEdit() {
+            document.getElementById('editMode').classList.remove('active');
+            editingScheduleKey = null;
+        }
+
+        // スケジュールを削除
+        function deleteSchedule(key, schedule) {
+            if (confirm(`${schedule.name}さんの${schedule.year}年${schedule.month}月の予定を削除しますか？`)) {
+                delete scheduleData[key];
+                
+                // 関連する補足文も削除
+                const supplementKey = `${schedule.name}_${schedule.year}_${schedule.month}`;
+                if (supplementData[supplementKey]) {
+                    delete supplementData[supplementKey];
+                }
+                
+                alert('削除しました');
+                loadEditList();
+                updateHomeDisplay();
+            }
+        }
+    </script>
+</body>
+</html>
